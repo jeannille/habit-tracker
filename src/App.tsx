@@ -1,35 +1,47 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import HabitForm from "./components/HabitForm";
+import HabitList from "./components/HabitList";
+import type { Habit } from "./types/habit";
 
-function App() {
-  const [count, setCount] = useState(0)
+const STORAGE_KEY = "habits";
+
+export default function App() {
+  const [habits, setHabits] = useState<Habit[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? (JSON.parse(saved) as Habit[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+  }, [habits]);
+
+  const addHabit = (habit: Habit) => setHabits((prev) => [...prev, habit]);
+
+  const toggleComplete = (id: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    setHabits((prev) =>
+      prev.map((h) =>
+        h.id === id
+          ? {
+              ...h,
+              completedDates: h.completedDates.includes(today)
+                ? h.completedDates.filter((d) => d !== today)
+                : [...h.completedDates, today],
+            }
+          : h
+      )
+    );
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <main className="mx-auto my-10 w-full max-w-2xl space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <h1 className="text-2xl font-semibold tracking-tight">Habit Tracker</h1>
+      <HabitForm onAddHabit={addHabit} />
+      <HabitList habits={habits} onToggleComplete={toggleComplete} />
+    </main>
+  );
 }
-
-export default App
